@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Progreso de Pagos Quincenales</title>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #0a0a0a, #1a1a1a);
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #00ffff;
+      text-shadow: 0 0 5px #00ffffaa;
+    }
+
+    .barra {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.3s;
+    }
+
+    .item:hover {
+      transform: scale(1.1);
+    }
+
+    .cuota {
+      width: 50px;
+      height: 50px;
+      text-align: center;
+      line-height: 50px;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 1.1em;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      border: 2px solid #333;
+    }
+
+    .dado {
+      background-color: #00cc66;
+      color: black;
+    }
+
+    .por-dar {
+      background-color: yellow;
+      color: black;
+    }
+
+    .futuro {
+      background-color: #bbbbbb;
+      color: #222;
+    }
+
+    .fecha {
+      font-size: 0.75em;
+      color: #ccc;
+      margin-top: 5px;
+    }
+
+    .leyenda {
+      margin-top: 40px;
+    }
+
+    .cuadro {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 5px;
+      border: 1px solid #999;
+    }
+
+    .verde { background-color: #00cc66; }
+    .amarillo { background-color: yellow; }
+    .gris { background-color: #bbb; }
+
+    .progreso-total {
+      width: 100%;
+      max-width: 400px;
+      margin: 40px auto 10px;
+      background-color: #222;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 15px #00ffff88;
+      height: 30px;
+      position: relative;
+    }
+
+    .progreso-barra {
+      height: 100%;
+      background: linear-gradient(270deg, #00ccff, #00ffaa, #00ccff);
+      background-size: 600% 100%;
+      animation: mover 5s linear infinite;
+      text-align: center;
+      line-height: 30px;
+      font-weight: bold;
+      color: #000;
+      transition: width 1s ease;
+      box-shadow: inset 0 0 5px #00000088;
+      font-size: 0.95em;
+      text-shadow: 0 0 3px #fff;
+    }
+
+    .completado {
+      background: linear-gradient(to right, #00ff88, #00cc66);
+      animation: none !important;
+      color: #000;
+      text-shadow: 0 0 5px #ffffffaa;
+    }
+
+    @keyframes mover {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 600% 50%; }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Progreso de Pagos Quincenales ($350)</h2>
+
+  <div class="barra" id="barraPagos"></div>
+
+  <div class="progreso-total">
+    <div class="progreso-barra" id="barraTotal">0%</div>
+  </div>
+
+  <p id="textoDetalle" style="color: #ccc; font-size: 0.9em;"></p>
+
+  <div class="leyenda">
+    <p><span class="cuadro verde"></span> Pagado</p>
+    <p><span class="cuadro amarillo"></span> Siguiente pago</p>
+    <p><span class="cuadro gris"></span> Restantes</p>
+  </div>
+
+  <script>
+    const totalPagos = 8;
+    const barra = document.getElementById("barraPagos");
+    const barraTotal = document.getElementById("barraTotal");
+    const textoDetalle = document.getElementById("textoDetalle");
+
+    function generarFechasQuincena(inicio, cantidad) {
+      const fechas = [];
+      let fecha = new Date(inicio);
+
+      while (fechas.length < cantidad) {
+        const dia = fecha.getDate();
+        if (dia === 15 || esFinDeMes(fecha)) {
+          fechas.push(new Date(fecha));
+        }
+        fecha.setDate(fecha.getDate() + 1);
+      }
+
+      return fechas;
+    }
+
+    function esFinDeMes(fecha) {
+      const siguiente = new Date(fecha);
+      siguiente.setDate(fecha.getDate() + 1);
+      return siguiente.getDate() === 1;
+    }
+
+    function lanzarConfeti() {
+      const duration = 2000;
+      const end = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+      const interval = setInterval(() => {
+        const timeLeft = end - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+
+        const count = 50 * (timeLeft / duration);
+        confetti({
+          ...defaults,
+          particleCount: count,
+          origin: { x: Math.random(), y: Math.random() * 0.5 }
+        });
+      }, 250);
+    }
+
+    function crearBarra() {
+      const hoy = new Date();
+      barra.innerHTML = '';
+      const fechas = generarFechasQuincena("2025-06-15", totalPagos);
+      let pagosRealizados = 0;
+      let siguienteAsignado = false;
+
+      fechas.forEach((fechaPago, i) => {
+        const item = document.createElement("div");
+        item.classList.add("item");
+
+        const pago = document.createElement("div");
+        pago.textContent = i + 1;
+        pago.classList.add("cuota");
+
+        const hoySinHora = new Date(hoy.toDateString());
+        const pagoSinHora = new Date(fechaPago.toDateString());
+
+        if (hoySinHora > pagoSinHora) {
+          pago.classList.add("dado");
+          pagosRealizados++;
+        } else if (!siguienteAsignado && hoySinHora <= pagoSinHora) {
+          pago.classList.add("por-dar");
+          siguienteAsignado = true;
+        } else {
+          pago.classList.add("futuro");
+        }
+
+        const label = document.createElement("div");
+        label.classList.add("fecha");
+        label.textContent = fechaPago.toLocaleDateString("es-MX", {
+          day: "2-digit", month: "short", year: "2-digit"
+        });
+
+        item.appendChild(pago);
+        item.appendChild(label);
+        barra.appendChild(item);
+      });
+
+      const inicio = new Date(fechas[0]);
+      const fin = new Date(fechas[fechas.length - 1]);
+      const actual = new Date();
+
+      const progreso = Math.min(1, (actual - inicio) / (fin - inicio));
+      const porcentaje = Math.floor(progreso * 100);
+
+      barraTotal.style.width = `${porcentaje}%`;
+      barraTotal.textContent = `${porcentaje}%`;
+      textoDetalle.textContent = `Avance del tiempo entre vales: ${porcentaje}%`;
+
+      if (porcentaje === 100) {
+        if (!barraTotal.classList.contains("completado")) lanzarConfeti();
+        barraTotal.classList.add("completado");
+        barraTotal.textContent = "✅ ¡Completado!";
+        textoDetalle.textContent = `Todos los pagos deberían estar completados`;
+      } else {
+        barraTotal.classList.remove("completado");
+      }
+    }
+
+    crearBarra();
+    setInterval(crearBarra, 1000); // actualiza cada segundo
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+</body>
+</html>
